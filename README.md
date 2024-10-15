@@ -1,8 +1,8 @@
 # II2120-Jarkom
 # Tugas Besar 1 Jaringan Komputer - Kelas K01
-## Kelompok: MasihPemula
 
-### Nama Aplikasi (Rencana): ElaElo
+*Kelompok: MasihPemula*  
+*Aplikasi (Rencana): ElaElo*
 
 ---
 
