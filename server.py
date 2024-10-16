@@ -19,7 +19,9 @@ def receive_message():
             message, addr = server.recvfrom(1024)
             decoded = message.decode()
 
-            if "SIGNUP_TAG:" in decoded:
+            if decoded == "PING":
+                server.sendto("PONG".encode(),addr)
+            elif "SIGNUP_TAG:" in decoded:
                 _, uname, passwd = decoded.split(":")
                 if passwd == PASSWORD:
                     if uname in username_set:
@@ -39,8 +41,9 @@ def receive_message():
                 if decoded == "Aku nak keluar":
                     broadcast_message(f"{uname} telah meninggalkan chatroom.")
                     print(f"{uname} ({addr}) keluar dari chatroom.")
-                    del clients[addr]
-                    username_set.remove(uname)
+                    if addr in clients:
+                        del clients[addr]
+                        username_set.remove(uname)
                 else:
                     broadcast_message(f"{uname}: {decoded}")
                     print(f"Pesan dari {uname}: {decoded}")

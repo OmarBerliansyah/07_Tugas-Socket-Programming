@@ -4,7 +4,7 @@ import random
 
 def connect_server(server_ip,server_port):
     client = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-    client.bind(("localhost",random.randint(0,65335)))
+    client.bind(("localhost",random.randint(8000,9000)))
 
     try: 
         client.sendto(b"PING", (server_ip,server_port))
@@ -39,7 +39,7 @@ username = input("Masukkan Username: ")
 while True:
     password = input("Masukkan Password: ").strip()
     # Mengirimkan SIGNUP request ke server
-    client.sendto(f"SIGNUP_TAG:{username}:{password}".encode(), ("localhost", 9999))
+    client.sendto(f"SIGNUP_TAG:{username}:{password}".encode(), (server_ip,server_port))
     
     # Menerima respons dari server
     response,_ = client.recvfrom(1024)
@@ -84,3 +84,5 @@ while True:
     else:
         client.sendto(message.encode(),(server_ip, server_port))
         print(f"")
+
+client.close()
