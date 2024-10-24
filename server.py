@@ -8,7 +8,7 @@ PASSWORD = "MasihPemula"
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server.bind((server, server_port))
 
-clients = {}  # Store addr:username
+clients = []  # Store addr:username
 username_set = set()  # Store all usernames
 
 # Function to receive messages from clients
