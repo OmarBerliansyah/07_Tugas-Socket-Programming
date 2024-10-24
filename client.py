@@ -1,88 +1,76 @@
 import socket
 import threading
-import random 
+import random
 
-def connect_server(server_ip,server_port):
-    client = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-    client.bind(("localhost",random.randint(8000,9000)))
+# Get server IP and port from user input (default values provided)
+server_ip = input("Enter server IP (default: localhost): ") or "localhost"
+server_port = int(input("Enter server port (default: 9999): ") or 9999)
+address = (server_ip, server_port)
 
-    try: 
-        client.sendto(b"PING", (server_ip,server_port))
-        response,_ = client.recvfrom(1024)
-        if response.decode() != "PONG":
-            print("Tidak ada respons dari server")
-            client.close()
-            return None
-        
-    except (socket.error,socket.timeout):
-        print("Unable to connect to the server")
-        client.close 
-        return None
-    
-    return client
+# Create the client socket
+client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+client.bind(('', random.randint(8000, 9000)))
 
-while True:
-    server_ip = input("Enter server IP (default: localhost): ") or "localhost"
-    server_port = int(input("Enter server port (default: 9999): ") or 9999)
-    
-    try:
-        server_port = int(server_port)
-        client = connect_server(server_ip,server_port)
-        if client:
-            break
-    except ValueError:
-        print("Port invalid")
-
+# Input username
 username = input("Masukkan Username: ")
+password = input("Masukkan Password: ")
+stop_receive = False
 
-# Penghandle-an password yang salah dan repetisi username
-while True:
-    password = input("Masukkan Password: ").strip()
-    # Mengirimkan SIGNUP request ke server
-    client.sendto(f"SIGNUP_TAG:{username}:{password}".encode(), (server_ip,server_port))
+# Attempt sign-up with the server
+while not stop_receive:
     
-    # Menerima respons dari server
-    response,_ = client.recvfrom(1024)
-    response = response.decode()
     try:
+        response, _ = client.recvfrom(1024)
+        response = response.decode()
+        
         if response == "Password salah!":
             print("Password salah, silakan coba lagi.")
+            client.close()
+            break
         elif response == "Username telah diambil!":
             print("Username sudah digunakan. coba username lain.")
-            username = input("Masukkan username: ")
+            client.close()
+            break
         elif response == "Berhasil bergabung ke chatroom!":
             print("Berhasil masuk ke chatroom.")
-            break #keluar loop, signup client sukses
-    except socket.error:
-        print("""Koneksi terputus
-              Keluar...""")
-        client.close()
-        exit(1)
+            break
+    except Exception as e:
+        print(f"Error saat menerima respon dari server: {e}")
+        break
 
-# Fungsi untuk menerima dan memunculkan pesan dari server
+# Function to receive messages from the server
 def receive_message():
     while True:
         try:
-            message,_ = client.recvfrom(1024)
-            print(message.decode())
-        except socket.error:
-            print(f"Koneksi terputus karena {Exception}")
+            message, _ = client.recvfrom(1024)
+            decoded_message = (message.decode())
+            print(decoded_message)
+        except Exception as e:
+            if not stop_receive:
+                print(f"Error saat menerima pesan: {e}")
             break
 
-# Menginisasi dan memulai thread receive message
-t = threading.Thread(target = receive_message)
+# Start a thread to handle incoming messages
+t = threading.Thread(target=receive_message)
+t.daemon = True  # Daemon thread to exit automatically with the main program
 t.start()
 
-# Mengirim permintaan sign up dengan username dan password
+client.sendto(f"SIGNUP_TAG:{username}:{password}".encode(), (address))
 
-# Program untuk mengirim pesan (Loop)
+# Main loop to send messages
 while True:
     message = input()
-    if message =="Aku nak keluar":
+    
+    if message == "Aku nak keluar":
         print("Keluar dari chat room...")
+        stop_receive = True
         break
     else:
-        client.sendto(message.encode(),(server_ip, server_port))
-        print(f"")
+        try:
+            client.sendto(message.encode(), (address))
+        except Exception as e:
+            print(f"Error saat mengirim pesan: {e}")
 
+# Close the client socket before exiting
 client.close()
+t.join()
