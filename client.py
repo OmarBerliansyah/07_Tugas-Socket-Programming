@@ -23,9 +23,12 @@ def receive_message():
             if "Password salah" in decoded_message or "Username telah diambil" in decoded_message:
                 stop_receive = True  # Signal to stop receiving on login failure
 
-        except Exception as e:
+        except socket.error as e:
             if not stop_receive:
                 print(f"Error saat menerima respon dari server: {e}")
+                break
+        except Exception as e:
+            print(f"Unexpected error: {e}")
             break
 
 # Loop until successful login
