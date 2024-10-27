@@ -22,7 +22,9 @@ client.sendto(f"SIGNUP_TAG:{username}:{password}".encode(), (address))
 stop_receive = False
 
 # Function to receive messages from the server
+# Function to receive messages from the server
 def receive_message():
+    global stop_receive  # Declare it as global at the start of the function
     while not stop_receive:
         try:
             message, _ = client.recvfrom(1024)
@@ -31,7 +33,6 @@ def receive_message():
             # Handle server response on signup status
             if decoded_message == "Password salah!":
                 print("Password salah, silakan coba lagi.")
-                global stop_receive
                 stop_receive = True  # Stop receiving after failed login
                 client.close()
             elif decoded_message == "Username telah diambil!":
