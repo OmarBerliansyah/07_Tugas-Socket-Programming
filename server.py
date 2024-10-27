@@ -14,7 +14,7 @@ server.bind((server_ip, server_port))
 clients = {}  # Store addr:username pairs
 username_set = set()  # Store all unique usernames
 
-# Broadcast message to all clients
+# Broadcast message to all clients except the sender
 def broadcast_message(message, sender_addr=None):
     for client_addr in clients.keys():
         if client_addr != sender_addr:  # Avoid echoing to sender
@@ -69,10 +69,13 @@ def receive_message():
 
 # Start thread to handle receiving messages
 t1 = threading.Thread(target=receive_message)
-t2 = threading.Thread(target=broadcast_message)
-
-t1.daemon = True
-t2.daemon = True
-
+t1.daemon = True  # Daemon thread to exit automatically with the main program
 t1.start()
-t2.start()
+
+# Keep the main thread running to prevent the program from exiting
+try:
+    t1.join()
+except KeyboardInterrupt:
+    print("Server shutting down.")
+finally:
+    server.close()
