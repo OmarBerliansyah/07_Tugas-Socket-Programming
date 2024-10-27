@@ -57,7 +57,6 @@ while not logged_in:
         elif decoded_message == "Username telah diambil!":
             print("Username sudah digunakan. Coba username lain.")
             # Break out to prompt for new username
-            username = input("Masukkan Username: ")
             break  # Exit the password loop to re-enter username
         elif decoded_message == "Berhasil bergabung ke chatroom!":
             print("Berhasil masuk ke chatroom.")
