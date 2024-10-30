@@ -2,7 +2,7 @@ import socket
 import threading
 
 # Server configuration
-server_ip = "0.0.0.0"  # Accept connections from any network interface
+server_ip = socket.gethostbyname(socket.gethostname())  # Accept connections from any network interface
 server_port = 9999
 PASSWORD = "MasihPemula"
 
