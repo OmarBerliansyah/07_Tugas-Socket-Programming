@@ -1,40 +1,42 @@
 import socket
 import threading
 
-# Server configuration
-server_ip = "0.0.0.0"  # Accept connections from any network interface
-server_port = 9999
 PASSWORD = "MasihPemula"
+broadcast_port = 8888  # Listening port for client's desired server port
 
-# Create UDP socket
+# Create a UDP socket for receiving the desired port
+port_listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+port_listener.bind(('', broadcast_port))
+
+# Wait for a client to broadcast the port
+print("Waiting for client to broadcast desired port...")
+message, addr = port_listener.recvfrom(1024)
+server_port = int(message.decode())
+print(f"Setting server port to {server_port} based on client input.")
+port_listener.close()
+
+server_ip = socket.gethostbyname(socket.gethostname())
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server.bind((server_ip, server_port))
 
-# Data structure to store clients and usernames
-clients = {}  # Store addr:username pairs
-username_set = set()  # Store all unique usernames
+clients = {}
+username_set = set()
 
-# Broadcast message to all clients except the sender
 def broadcast_message(message, sender_addr=None):
     for client_addr in clients.keys():
-        if client_addr != sender_addr:  # Avoid echoing to sender
+        if client_addr != sender_addr:
             try:
                 server.sendto(message.encode(), client_addr)
             except Exception as e:
                 print(f"Error sending message to {client_addr}: {e}")
 
-# Function to receive and handle messages from clients
 def receive_message():
     while True:
         try:
             message, addr = server.recvfrom(1024)
             decoded = message.decode()
-            
-            # Handle PING message
             if decoded == "PING":
                 server.sendto("PONG".encode(), addr)
-            
-            # Handle user sign-up
             elif "SIGNUP_TAG:" in decoded:
                 _, uname, passwd = decoded.split(":")
                 if passwd == PASSWORD:
@@ -50,8 +52,6 @@ def receive_message():
                 else:
                     server.sendto("Password salah!".encode(), addr)
                     print(f"Client {addr} attempted with wrong password")
-            
-            # Handle regular messages
             elif addr in clients:
                 uname = clients.get(addr, "Unknown")
                 if decoded == "Aku nak keluar":
@@ -63,16 +63,13 @@ def receive_message():
                 else:
                     broadcast_message(f"{uname}: {decoded}", sender_addr=addr)
                     print(f"Message from {uname}: {decoded}")
-
         except Exception as e:
             print(f"Error receiving message: {e}")
 
-# Start thread to handle receiving messages
 t1 = threading.Thread(target=receive_message)
-t1.daemon = True  # Daemon thread to exit automatically with the main program
+t1.daemon = True
 t1.start()
 
-# Keep the main thread running to prevent the program from exiting
 try:
     t1.join()
 except KeyboardInterrupt:
