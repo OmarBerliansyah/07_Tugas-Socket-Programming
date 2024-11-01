@@ -19,6 +19,29 @@ address = (server_ip, server_port)
 
 stop_receive = False
 
+def rc4(key, data):
+    # Initialize the S array with a key-scheduling algorithm (KSA)
+    S = list(range(256))
+    j = 0
+    key = [ord(c) for c in key]
+    for i in range(256):
+        j = (j + S[i] + key[i % len(key)]) % 256
+        S[i], S[j] = S[j], S[i]
+
+    # Pseudo-random generation algorithm (PRGA)
+    i = j = 0
+    result = []
+    for char in data:
+        i = (i + 1) % 256
+        j = (j + S[i]) % 256
+        S[i], S[j] = S[j], S[i]
+        K = S[(S[i] + S[j]) % 256]
+        result.append(chr(ord(char) ^ K))
+    
+    return ''.join(result)
+
+ENCRYPT_KEY = "AkuMahMasihPemulaPuh"
+
 def receive_message():
     global stop_receive
     while not stop_receive:
@@ -104,12 +127,13 @@ t.start()
 try:
     while not stop_receive:
         message = input()
+        encrypt = rc4(ENCRYPT_KEY, message)
         if message == "Aku nak keluar":
             print("Leaving chat room...")
             client.sendto(message.encode(), address)
             stop_receive = True
         else:
-            client.sendto(message.encode(), address)
+            client.sendto(encrypt.encode(), address)
 except KeyboardInterrupt:
     print("Client interrupted. Exiting...")
 finally:

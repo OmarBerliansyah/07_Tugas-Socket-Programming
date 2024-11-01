@@ -84,11 +84,35 @@ def perform_handshake(addr):
 
     return False
 
+def rc4(key, data):
+    # Initialize the S array with a key-scheduling algorithm (KSA)
+    S = list(range(256))
+    j = 0
+    key = [ord(c) for c in key]
+    for i in range(256):
+        j = (j + S[i] + key[i % len(key)]) % 256
+        S[i], S[j] = S[j], S[i]
+
+    # Pseudo-random generation algorithm (PRGA)
+    i = j = 0
+    result = []
+    for char in data:
+        i = (i + 1) % 256
+        j = (j + S[i]) % 256
+        S[i], S[j] = S[j], S[i]
+        K = S[(S[i] + S[j]) % 256]
+        result.append(chr(ord(char) ^ K))
+    
+    return ''.join(result)
+
+ENCRYPT_KEY = "AkuMahMasihPemulaPuh"
+
 def receive_message():
     while True:
         try:
             message, addr = server.recvfrom(1024)
             decoded = message.decode()
+            decrypt = rc4(ENCRYPT_KEY, decoded)
             
             if decoded == "SYN":
                 if not perform_handshake(addr):
@@ -127,8 +151,8 @@ def receive_message():
                         username_set.remove(uname)
                 else:
                     broadcast_message(f"{uname}: {decoded}", sender_addr=addr)
-                    save_message("Chatroom", f"{uname}: {decoded}")
-                    print(f"Message from {uname}: {decoded}")
+                    save_message("Chatroom", f"{uname}: {decrypt}")
+                    print(f"Message from {uname}: {decrypt}")
                     server.sendto("ACK".encode(), addr)
                     
         except ConnectionResetError:
