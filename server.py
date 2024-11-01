@@ -1,5 +1,7 @@
 import socket
 import threading
+import queue
+from datetime import datetime
 
 PASSWORD = "MasihPemula"
 broadcast_port = 8888  # Listening port for client's desired server port
@@ -21,6 +23,38 @@ server.bind((server_ip, server_port))
 
 clients = {}
 username_set = set()
+messages = queue.Queue()
+chat_history_by_users = {}
+
+LOG_FILE = "chat_history.txt"
+
+# Fungsi untuk mendapatkan timestamp
+def get_timestamp():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+# Fungsi untuk menyimpan pesan ke file berdasarkan pengguna, dengan timestamp
+def save_message(user_pair, message):
+    timestamp = get_timestamp()  # Dapatkan timestamp
+    full_message = f"[{timestamp}] {message}"
+    print(f"Saving message: {full_message}")
+    
+    # Store all messages under the shared "Chatroom" key
+    if "Chatroom" not in chat_history_by_users:
+        chat_history_by_users["Chatroom"] = []
+    chat_history_by_users["Chatroom"].append(full_message)
+    
+    # Save the message to the log file
+    with open(LOG_FILE, "a") as file:
+        file.write(f"{full_message}\n")
+
+# Fungsi untuk membaca riwayat pesan dari file berdasarkan pengguna
+def load_messages():
+    try:
+        with open(LOG_FILE, "r") as file:
+            lines = file.readlines()
+            return [line.strip() for line in lines]
+    except FileNotFoundError:
+        return []
 
 def broadcast_message(message, sender_addr=None):
     for client_addr in clients.keys():
@@ -73,6 +107,12 @@ def receive_message():
                         server.sendto("Berhasil bergabung ke chatroom!".encode(), addr)
                         broadcast_message(f"{uname} telah bergabung ke chatroom!")
                         print(f"{uname} ({addr}) successfully joined the chatroom.")
+
+                        # Load and send the entire chatroom history
+                        past_messages = load_messages()
+                        for past_message in past_messages:
+                            server.sendto(past_message.encode(), addr)
+                        print(f"Sent chat history to {uname} ({addr}).")
                 else:
                     server.sendto("Password salah!".encode(), addr)
                     print(f"Client {addr} attempted with wrong password")
@@ -87,6 +127,7 @@ def receive_message():
                         username_set.remove(uname)
                 else:
                     broadcast_message(f"{uname}: {decoded}", sender_addr=addr)
+                    save_message("Chatroom", f"{uname}: {decoded}")
                     print(f"Message from {uname}: {decoded}")
                     server.sendto("ACK".encode(), addr)
                     
