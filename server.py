@@ -4,29 +4,30 @@ import queue
 from datetime import datetime
 
 PASSWORD = "MasihPemula"
-broadcast_port = 8888  # Listening port for client's desired server port
+broadcast_port = 8888  # Port untuk mendengar input server_port dari client
 
-# Create a UDP socket for receiving the desired port
+# Membuat socket UDP untuk menerima input server_port
 port_listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-port_listener.bind(('', broadcast_port))
+port_listener.bind(('', broadcast_port)) #IP address untuk koneksi dibuat untuk menyesuaikan 
 
-# Wait for a client to broadcast the port
-print("Waiting for client to broadcast desired port...")
-message, addr = port_listener.recvfrom(1024)
+# Menunggu client melakukan broadcast dari port yang di-input
+print("Menunggu client untuk melakukan broadcast di port yang dituju...")
+message, addr = port_listener.recvfrom(1024) #Menghubungkan ke port untuk mendengar pesan
 server_port = int(message.decode())
-print(f"Setting server port to {server_port} based on client input.")
+print(f"Mengatur port server menjadi {server_port} sebagai tempat menerima pesan .")
 port_listener.close()
 
 server_ip = socket.gethostbyname(socket.gethostname())
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server.bind((server_ip, server_port))
 
-clients = {}
+#Struktur data untuk menyimpan data client, username, pesan, dan history chat
+clients = {} 
 username_set = set()
 messages = queue.Queue()
 chat_history_by_users = {}
 
-LOG_FILE = "chat_history.txt"
+LOG_FILE = "chat_history.txt" #inisiasi file untuk menyimpan history chat
 
 # Fungsi untuk mendapatkan timestamp
 def get_timestamp():
@@ -38,12 +39,12 @@ def save_message(user_pair, message):
     full_message = f"[{timestamp}] {message}"
     print(f"Saving message: {full_message}")
     
-    # Store all messages under the shared "Chatroom" key
+    # Menyimpan semua pesan terkirim di dalam dictionary history pesan pada key "Chatroom"
     if "Chatroom" not in chat_history_by_users:
         chat_history_by_users["Chatroom"] = []
     chat_history_by_users["Chatroom"].append(full_message)
     
-    # Save the message to the log file
+    # Menyimpan pesan terkirim ke file .txt
     with open(LOG_FILE, "a") as file:
         file.write(f"{full_message}\n")
 
@@ -55,37 +56,38 @@ def load_messages():
             return [line.strip() for line in lines]
     except FileNotFoundError:
         return []
-
+# Fungsi untuk mengirimkan pesan dari pengirim ke alamat client yang dituju 
 def broadcast_message(message, sender_addr=None):
     for client_addr in clients.keys():
         if client_addr != sender_addr:
             try:
                 server.sendto(message.encode(), client_addr)
             except Exception as e:
-                print(f"Error sending message to {client_addr}: {e}")
+                print(f"Error saat mengirim pesan ke client {client_addr}: {e}")
 
+# Fungsi untuk melakukan handshake antara server dan client
 def perform_handshake(addr):
     print(f"Received SYN from {addr}. Sending SYN-ACK...")
-    server.settimeout(3)  # Timeout for ACK response
+    server.settimeout(3)  # Timeout ACK \\ ACK tidak berhasil
 
     try:
         server.sendto("SYN-ACK".encode(), addr)
         ack, _ = server.recvfrom(1024)
         if ack.decode() == "ACK":
-            print(f"Handshake completed successfully with {addr}.")
+            print(f"Handshake dengan {addr} berhasil.")
             return True
     except socket.timeout:
-        print(f"Handshake failed with {addr}: No ACK received.")
-        print("Possible reasons:")
-        print("- Client may have disconnected before completing handshake.")
-        print("- Network issues causing packet loss or delay.")
+        print(f"Handshake dengan {addr} gagal: Tidak ada ACK.")
+        print("Kemungkinan penyebab:")
+        print("- Koneksi klient mungkin terputus sebelum selesai handshake.")
+        print("- Permasalahan jaringan yang menyebabkan packet loss.")
     finally:
-        server.settimeout(None)  # Remove timeout after handshake attempt
+        server.settimeout(None)  # Menghentikan timeout setelah upaya handshake selesai
 
     return False
 
 def rc4(key, data):
-    # Initialize the S array with a key-scheduling algorithm (KSA)
+    # Menginisiasi array S dengan key-scheduling algorithm (KSA)
     S = list(range(256))
     j = 0
     key = [ord(c) for c in key]
@@ -93,7 +95,7 @@ def rc4(key, data):
         j = (j + S[i] + key[i % len(key)]) % 256
         S[i], S[j] = S[j], S[i]
 
-    # Pseudo-random generation algorithm (PRGA)
+    # Pseudo-random generation algorithm (PRGA) 
     i = j = 0
     result = []
     for char in data:
@@ -132,7 +134,7 @@ def receive_message():
                         broadcast_message(f"{uname} telah bergabung ke chatroom!")
                         print(f"{uname} ({addr}) successfully joined the chatroom.")
 
-                        # Load and send the entire chatroom history
+                        # Memroses dan mengirim seluruh history dari chat room 
                         past_messages = load_messages()
                         for past_message in past_messages:
                             server.sendto(past_message.encode(), addr)
@@ -145,7 +147,7 @@ def receive_message():
                 uname = clients.get(addr, "Unknown")
                 if decoded == "Aku nak keluar":
                     broadcast_message(f"{uname} telah meninggalkan chatroom.")
-                    print(f"{uname} ({addr}) left the chatroom.")
+                    print(f"{uname} ({addr}) meninggalkan chatroom.")
                     if addr in clients:
                         del clients[addr]
                         username_set.remove(uname)
@@ -156,17 +158,17 @@ def receive_message():
                     server.sendto("ACK".encode(), addr)
                     
         except ConnectionResetError:
-            # Handle abrupt client disconnection
+            # Menghandle apabila koneksi dengan client tiba-tiba terputus
             if addr in clients:
                 uname = clients.pop(addr)
                 username_set.remove(uname)
-                print(f"Client {addr} ({uname}) disconnected unexpectedly.")
-                broadcast_message(f"{uname} has disconnected from the chat.")
+                print(f"Koneksi dengan client {addr} ({uname}) terputus.")
+                broadcast_message(f"{uname} telah terputus dengan chatroom.")
         except KeyboardInterrupt:
             print("Server interrupted. Shutting down...")
             break
         except Exception as e:
-            print(f"Error receiving message: {e}")
+            print(f"Error saat menerima pesan: {e}")
 
 t1 = threading.Thread(target=receive_message)
 t1.daemon = True
@@ -175,6 +177,6 @@ t1.start()
 try:
     t1.join()
 except KeyboardInterrupt:
-    print("Server shutting down.")
+    print("Mematikan server.")
 finally:
     server.close()

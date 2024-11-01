@@ -3,18 +3,18 @@ import threading
 import random
 
 
-# Input desired server port
-server_port = int(input("Enter server port for chat room (e.g., 9999): "))
+# Client bisa menginput port dan IP yang diinginkan 
+server_port = int(input("Masukkan port untuk chat room (e.g., 9999): "))
 broadcast_address = ('<broadcast>', 8888)
 
-# Create a UDP socket for broadcasting the desired port
+# Membuat socket UDP berdasarkan input IP dan port client
 client_broadcast = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client_broadcast.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 client_broadcast.sendto(str(server_port).encode(), broadcast_address)
 client_broadcast.close()
 
-# Now, connect to the server on the desired port
-server_ip = input("Enter server IP (default: localhost): ") or "localhost"
+# Menghubungkan client ke server melalui IP dan port yang dituju
+server_ip = input("Masukkan IP server (default: localhost): ") or "localhost"
 address = (server_ip, server_port)
 
 stop_receive = False
@@ -49,77 +49,77 @@ def receive_message():
             message, _ = client.recvfrom(1024)
             decoded_message = message.decode()
             if decoded_message == "ACK":
-                print("Server acknowledged message.")
+                print("Server menerima pesan.")
             else:
                 print(decoded_message)
         except socket.error as e:
             if not stop_receive:
-                print(f"Error receiving from server: {e}")
+                print(f"Error saat menerima dari server: {e}")
                 break
 
 def initiate_handshake():
-    print("Initiating handshake...")
-    attempts = 3  # Number of handshake attempts
-    client.settimeout(3)  # Timeout for each attempt
+    print("Memulai handshake...")
+    attempts = 3  # Banyaknya upaya handshake jika tidak langsung berhasil
+    client.settimeout(3)  # Timeout atau jeda sesaat setelah setiap upaya handshake
 
     for attempt in range(1, attempts + 1):
         try:
-            print(f"Handshake attempt {attempt} of {attempts}")
+            print(f"Percobaan handshake ke-{attempt} dari {attempts}")
             client.sendto("SYN".encode(), address)
             response, _ = client.recvfrom(1024)
             
             if response.decode() == "SYN-ACK":
-                print("Received SYN-ACK, sending ACK to complete handshake.")
+                print("Menerima SYN-ACK, mengirim ACK untuk menyelesaikan handshake.")
                 client.sendto("ACK".encode(), address)
-                client.settimeout(None)  # Disable timeout after handshake
-                print("Handshake completed successfully.")
+                client.settimeout(None)  
+                print("Handshake telah berhasil.")
                 return True
         except socket.timeout:
-            print(f"Attempt {attempt} failed: No response from server. Retrying...")
+            print(f"Percobaan {attempt} gagal: tidak ada respons dari server. Menghubungkan kembali...")
         except ConnectionResetError:
-            print("Connection was forcibly closed by the remote host. Possible reasons:")
-            print("- The server port may be incorrect or unreachable.")
-            print("- The server may be offline or not listening on the specified port.")
+            print("Koneksi ditutup secara paksa oleh remote host. Coba untuk meninjau hal-hal berikut:")
+            print("- Port server mungkin salah atau tidak bisa terkoneksi.")
+            print("- Server mungkin sedang offline atau tidak mendengarkan port tersebut.")
             return False
         except socket.error as e:
-            print(f"An unexpected socket error occurred: {e}")
+            print(f"Error tak terduga pada socket : {e}")
             return False
     
-    # Handshake failed after maximum attempts
-    print("Handshake failed after maximum attempts. Possible issues could be:")
-    print("- Server is offline or unreachable.")
-    print("- Incorrect server IP or port.")
-    print("- Network issues causing packet loss.")
+    # Handshake sudah mencapai nilai maksimum
+    print("Handshake gagal setelah percobaan maksimal. Kemungkinan alasannya adalah:")
+    print("- Server sedang offline atau tidak bisa terkoneksi.")
+    print("- IP dan port yang salah.")
+    print("- Packet loss akibat masalah jaringan.")
     return False
 
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client.bind(('', random.randint(8000, 9000)))
 
-# Perform handshake and exit if handshake fails
+# Melakukan handshake, keluar program jika gagal
 if not initiate_handshake():
     client.close()
     exit()
 
 logged_in = False
 while not logged_in:
-    username = input("Enter Username: ")
+    username = input("Masukkan username: ")
     while True:
-        password = input("Enter Password: ")
+        password = input("Masukkan Password: ")
         client.sendto(f"SIGNUP_TAG:{username}:{password}".encode(), address)
         message, _ = client.recvfrom(1024)
         decoded_message = message.decode()
         if decoded_message == "Password salah!":
-            print("Wrong password, try again.")
+            print("Password salah! silakan coba lagi.")
             continue
         elif decoded_message == "Username telah diambil!":
-            print("Username already taken. Try another.")
+            print("Username telah diambil! silakan input username yang unik.")
             break
         elif decoded_message == "Berhasil bergabung ke chatroom!":
-            print("Successfully joined the chat room.")
+            print("Berhasil bergabung ke chatroom!")
             logged_in = True
             break
 
-# Start receiving messages in a separate thread
+# Mulai untuk menerima pesan pada thread yang terpisah
 t = threading.Thread(target=receive_message)
 t.daemon = True
 t.start()
@@ -129,13 +129,13 @@ try:
         message = input()
         encrypt = rc4(ENCRYPT_KEY, message)
         if message == "Aku nak keluar":
-            print("Leaving chat room...")
+            print("Meninggalkan chat room...")
             client.sendto(message.encode(), address)
             stop_receive = True
         else:
             client.sendto(encrypt.encode(), address)
 except KeyboardInterrupt:
-    print("Client interrupted. Exiting...")
+    print("Client menginterupsi. Keluar program...")
 finally:
     stop_receive = True
     client.close()
