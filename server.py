@@ -150,7 +150,7 @@ def receive_message():
                         del clients[addr]
                         username_set.remove(uname)
                 else:
-                    broadcast_message(f"{uname}: {decoded}", sender_addr=addr)
+                    broadcast_message(f"{uname}: {decrypt}", sender_addr=addr)
                     save_message("Chatroom", f"{uname}: {decrypt}")
                     print(f"Message from {uname}: {decrypt}")
                     server.sendto("ACK".encode(), addr)
