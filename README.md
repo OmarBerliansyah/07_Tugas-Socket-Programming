@@ -26,7 +26,8 @@
 *  2. Menjalankan program server.py pada dengan compiler python pada IDE masing-masing atau pada terminal dengan mengarahkan directory folder ke folder tempat server.py, lalu memasukkan "python server.py" pada terminal.
 *  3. Buka terminal atau command prompt dan arahkan directorynya ke folder yang mengandung file client.py, .
 *  4. Jalankan client.py dengan compiler python atau menginput "python client.py" pada terminal 
-*  5. Masukkan IP dan Port yang ingin dituju (Pastikan jaringan internet anda sama dengan jaringan server, cara mengecek adalah dengan mengetik ipconfig pada terminal dan cari kolom IPv4 dari Wireless LAN Adapter Wi-Fi)
+*  5. Masukkan IP dan Port yang ingin dituju (Pastikan jaringan internet anda sama dengan jaringan server, cara mengecek adalah dengan mengetik ipconfig pada terminal dan cari kolom IPv4 dari Wireless LAN Adapter Wi-Fi), dan port yang dituju adalah 9999
+*  - Pastikan IP dan Port ketika login berbeda dengan yang sudah pernah login sebelumnya, karena jika sama, server akan otomatis mengeluarkan user tersebut. 
 *  6. Login: Masukkan username yang akan dipakai di chatroom, harus unik, tidak boleh sama dengan yang pernah login di chatroom.
 *  7. Masukkan password, yang memegang password adalah pemilik server sehingga bisa menghubungi yang bersangkutan atau mengecek di source code server.
 *  8. Jika proses ACK telah berhasil, pengguna sudah terhubung ke chatroom dan bisa memulai untuk mengirim teks pesan.
