@@ -20,7 +20,6 @@ address = (server_ip, server_port)
 stop_receive = False
 
 def rc4(key, data):
-    # Initialize the S array with a key-scheduling algorithm (KSA)
     S = list(range(256))
     j = 0
     key = [ord(c) for c in key]
@@ -28,7 +27,6 @@ def rc4(key, data):
         j = (j + S[i] + key[i % len(key)]) % 256
         S[i], S[j] = S[j], S[i]
 
-    # Pseudo-random generation algorithm (PRGA)
     i = j = 0
     result = []
     for char in data:
